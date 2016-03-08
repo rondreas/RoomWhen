@@ -1,0 +1,6 @@
+beautifulsoup4==4.4.1
+icalendar==3.9.2
+python-dateutil==2.5.0
+pytz==2015.7
+requests==2.9.1
+six==1.10.0
