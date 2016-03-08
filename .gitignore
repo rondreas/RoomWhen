@@ -1,5 +1,11 @@
 # ignore my doodle ical url
 .icalURL
 
+# ignore swapfiles
+*.swp
+
 # ignore the virutal environment
 venv/
+
+# ignore cached compiles
+__pycache__/
