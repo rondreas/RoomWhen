@@ -114,9 +114,10 @@ class Timeslots:
 
     def findGames(self, DTstart, DTend):
         ''' Find all games inside the timespan of DTstart and DTend. '''
-        foundGames = []
-        for game in self.games:
 
+        foundGames = []
+        
+        for game in self.games:
             gameDT = datetime.datetime.strptime((game['Date'] + ' ' + game['Start']), 
                                                 "%Y-%m-%d %H:%M")
 
@@ -124,6 +125,22 @@ class Timeslots:
                 foundGames.append(game)
 
         return foundGames
+
+    def filter(self, dictList, **kwargs):
+        ''' Searches list of dictionaries for matches to
+        all key value pairs expressed as key='value' '''
+        
+        sortedList = []
+
+        for dictionary in dictList:
+            matches = 0
+            for key, value in kwargs.items():
+                if dictionary[key] == value:
+                    matches += 1
+                if matches == len(kwargs):
+                    sortedList.append(dictionary)
+
+        return sortedList
 
     def filterGames(self, key, value):
         '''Return a filtered list of games with given status.'''
@@ -135,9 +152,5 @@ class Timeslots:
 
 if __name__ == '__main__':
     zombie = Timeslots('zombie_lab')
-    s = datetime.datetime.now()
-    e = datetime.datetime.strptime("2016-03-07 23:59", "%Y-%m-%d %H:%M")
-    print(zombie.findGames(s,e))
-    print(s)
-    print(e)
-
+    d = datetime.datetime.now().strftime('%Y-%m-%d')
+    print(zombie.filter(zombie.games, Date=d, Status='Reserved'))
