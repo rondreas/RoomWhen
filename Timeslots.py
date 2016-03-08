@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+# TODO Improve error handling, as of now this will crash if the
+# request fails.
+
 import requests
 import datetime
 from bs4 import BeautifulSoup
@@ -16,7 +19,7 @@ class Timeslots:
         self.header = {'User-Agent':'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:39.0) Gecko/20100101 Firefox/39.0'}
 
         try:
-            self.updateTimeslots()
+            self.update()
         except:
             print("Oops! Something went wrong, are you connected to the internet?")
 
@@ -38,7 +41,7 @@ class Timeslots:
 
         return soup
 
-    def updateTimeslots(self):
+    def update(self):
         '''Get and store two weeks of timeslots into a list. Return list of
         dicts containing all important information like; start and end time,
         date. And the status of the game.'''

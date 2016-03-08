@@ -2,7 +2,11 @@ import icalendar
 import requests
 from datetime import datetime
 
-#TODO utilize datetime.strf() to get formatted strings.
+#TODO evaluate removal of getNextEventID() and getEvent(), also the removal of
+# adding a id to stored events.
+
+#TODO Why convert event values to string? When they are mostly converted back
+# to datetime objects for operations.
 
 class Schedule():
     ''' Create a schedule object, holding the events from doodle ical schedule taken from given url.'''
@@ -35,12 +39,13 @@ class Schedule():
 
             # One can't compare naive to aware datetime objects, so we
             # strip the tzinfo from the calendar datetime.
-            if dtStart.dt.replace(tzinfo=None) > datetime.now():
+            if dtEnd.dt.replace(tzinfo=None) > datetime.now():
                 self.events.append({'summary':str(summary),
-                                    'date':str(dtStart.dt.replace(tzinfo=None).date()),
-                                    'timeStart':str(dtStart.dt.replace(tzinfo=None).time()),
-                                    'timeEnd':str(dtEnd.dt.replace(tzinfo=None).time()),
-                                    'id':sid})
+                                    'date':dtStart.dt.replace(tzinfo=None).date().strftime('%Y-%m-%d'),
+                                    'timeStart':dtStart.dt.replace(tzinfo=None).time().strftime('%H:%M'),
+                                    'timeEnd':dtEnd.dt.replace(tzinfo=None).time().strftime('%H:%M'),
+                                    'id':sid,
+                                    'datetime':dtEnd.dt.replace(tzinfo=None)})
 
             # increment shift id number
             sid += 1
@@ -50,7 +55,7 @@ class Schedule():
 
         earliest = ''
         earliest_id = None
-        dtPattern = "%Y-%m-%d %H:%M:%S"
+        dtPattern = "%Y-%m-%d %H:%M"
 
         for event in self.events:
             check = event['date'] + ' ' + event['timeStart']
@@ -65,11 +70,30 @@ class Schedule():
 
         return earliest_id
 
+    def sortEventsByDatetime(self):
+        ''' '''
+        newList = sorted(self.events, key=lambda k: k['datetime'])
+        return newList
+
+    def getRoom(self, event):
+        if 'zombie' in event['summary'].lower():
+            return 'zombie_lab'
+        elif 'bank' in event['summary'].lower():
+            return 'bank'
+        elif 'bunker' in event['summary'].lower():
+            return 'bunker'
+        else:
+            print("Unexpected event, nothing to return")
+
     def getEvent(self, sid):
         for event in self.events:
             if event['id'] == sid:
                 return event
 
+    def prunePastEvents(self):
+        ''' Goes through our list of events and deletes any event
+        that has already passed. '''
+        self.events[:] = [event for event in self.events if event['datetime']>datetime.now()]
 
 if __name__ == '__main__':
     url = ''
@@ -77,4 +101,6 @@ if __name__ == '__main__':
         url = icalURL.readline().replace('\n', '')
 
     mySchedule = Schedule(url)
-    print(mySchedule.getEvent(mySchedule.getNextEventID()))
+    mySchedule.events = mySchedule.sortEventsByDatetime()
+    mySchedule.prunePastEvents()
+    print(mySchedule.events)
