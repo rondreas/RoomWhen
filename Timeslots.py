@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
 
-# TODO Improve error handling, as of now this will crash if the
-# request fails.
-
 import requests
 import datetime
 from bs4 import BeautifulSoup
@@ -11,22 +8,19 @@ class Timeslots:
     '''Creates an object with timeslots for given room.'''
     def __init__(self, room):
         self.room = room    # Valid options are; bank, bunker, zombie_lab
+
         self.session = requests.Session()
         self.url = "http://stockholm.roomescapelive.se/reservation/index/game/{}/step/{}"
-        # Group size is irrelevant for our purpose.
         self.payload = {'game': self.room, 'group': '4'}
-        # Pretending we're using Firefox on Windows 10 machine, instead of Python.
         self.header = {'User-Agent':'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:39.0) Gecko/20100101 Firefox/39.0'}
 
-        try:
-            self.update()
-        except:
-            print("Oops! Something went wrong, are you connected to the internet?")
+        games = []
 
     def initHtml(self):
         '''Request first step of the booking process, seeing we're blocked from
         going straight for the second step which has all timeslots.'''
         r = self.session.get(self.url.format(self.room, '1'))
+        return r.status_code == requests.codes.ok
 
     def getHtml(self, week):
         '''Get the HTML with availability for given week. Returning Beautiful
@@ -47,16 +41,13 @@ class Timeslots:
         date. And the status of the game.'''
 
         games = []
-
-        self.initHtml()
-        soups = [self.getHtml('0'),
-                 self.getHtml('1')]
-
         date = None
         sTime = None
         eTime = None
-
         status = ''
+
+        soups = [self.getHtml('0'),
+                 self.getHtml('1')]
 
         # Get date for timeslot.
         today = datetime.datetime.now()

@@ -3,15 +3,16 @@ from Schedule import Schedule
 from Timeslots import Timeslots
 from datetime import datetime
 
-# TODO Clean-up, and make code more DRY
-
 INTERVAL = 300
 
 def main(schedule_url):
     ''' Main loop '''
     
     # Create Schedule object.
-    schedule = Schedule(schedule_url)
+    try:
+        schedule = Schedule(schedule_url)
+    except:
+        pass
 
     # Sort the list of events in chronological order
     schedule.events = schedule.sortEventsByDatetime()
@@ -20,23 +21,31 @@ def main(schedule_url):
         # Remove any passed events from our list of events
         schedule.prunePastEvents()
 
-        # Get the current/upcomming event and the one
-        # after it. Create a Timeslots object for each.
         rooms = []
-        currentRoom = Timeslots(schedule.getRoom(schedule.events[0]))
-        nextRoom = Timeslots(schedule.getRoom(schedule.events[1]))
-        rooms.append(currentRoom)
-        rooms.append(nextRoom)
+        games = []
 
-        # Find all games during focused shifts
-        games1 = rooms[0].findGames(schedule.events[0]['timeStart'], schedule.events[0]['timeEnd'])
-        games2 = rooms[1].findGames(schedule.events[1]['timeStart'], schedule.events[1]['timeEnd'])
+        for i in range(2):
+            rooms.append(Timeslots(schedule.getRoom(schedule.events[i])))
+        
+        i = 0
+        for room in rooms:
+            if room.initHtml():
+                room.update()
 
-        games1 = rooms[0].filter(games1, Status='Reserved')
-        games2 = rooms[1].filter(games2, Status='Reserved')
+                # Find all games during focused shifts
+                r = rooms[i].findGames(schedule.events[i]['timeStart'], schedule.events[i]['timeEnd'])
 
-        print(games1)
-        print(games2)
+                games.append(rooms[i].filter(r, Status='Reserved'))
+
+            else:
+                print("Bad Request - make sure there is an established connection")
+
+            i += 1
+
+        
+        print(datetime.now().strftime('%H:%M'))
+        print(games[0])
+        print(games[1])
 
         time.sleep(INTERVAL)
 
