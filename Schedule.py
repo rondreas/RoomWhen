@@ -6,15 +6,11 @@ class Schedule():
     ''' Create a schedule object, holding the events from doodle ical schedule 
     taken from given url.'''
     def __init__(self, url):
-        try:
-            self.request = requests.get(url)
-        except:
-            print("Error: Could not get requested URL")
-
+        self.request = requests.get(url)
         self.events = []
-        self.calendar = icalendar.Calendar.from_ical(self.request.content)
 
-        if self.request:
+        if self.request.status_code == requests.codes.ok:
+            self.calendar = icalendar.Calendar.from_ical(self.request.content)
             self.parseCalendar()
 
     def parseCalendar(self):

@@ -14,7 +14,7 @@ class Timeslots:
         self.payload = {'game': self.room, 'group': '4'}
         self.header = {'User-Agent':'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:39.0) Gecko/20100101 Firefox/39.0'}
 
-        games = []
+        self.games = []
 
     def initHtml(self):
         '''Request first step of the booking process, seeing we're blocked from
@@ -97,7 +97,8 @@ class Timeslots:
                 data = {"Start": sTime.strftime("%H:%M"),
                         "End": eTime.strftime("%H:%M"),
                         "Status":status,
-                        "Date": str(date)}
+                        "Date": str(date),
+                        "Datetime":datetime.datetime.combine(date, eTime)}
 
                 games.append(data)
 
@@ -136,15 +137,12 @@ class Timeslots:
 
         return sortedList
 
-    def filterGames(self, key, value):
-        '''Return a filtered list of games with given status.'''
-        filteredGames = []
-        for game in self.games:
-            if(game[key] == value):
-                filteredGames.append(game)
-        return filteredGames
-
 if __name__ == '__main__':
     zombie = Timeslots('zombie_lab')
-    d = datetime.datetime.now().strftime('%Y-%m-%d')
-    print(zombie.filter(zombie.games, Date=d, Status='Reserved'))
+    
+    if zombie.initHtml():
+        zombie.update()
+        for game in zombie.games:
+            print(game)
+    else:
+        print("Bad request")
