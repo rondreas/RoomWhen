@@ -94,11 +94,9 @@ class Timeslots:
                 else:
                     status = ''
 
-                data = {"Start": sTime.strftime("%H:%M"),
-                        "End": eTime.strftime("%H:%M"),
-                        "Status":status,
-                        "Date": str(date),
-                        "Datetime":datetime.datetime.combine(date, eTime)}
+                data = {"Start": datetime.datetime.combine(date, sTime),
+                        "End": datetime.datetime.combine(date, eTime),
+                        "Status":status}
 
                 games.append(data)
 
@@ -113,10 +111,7 @@ class Timeslots:
         foundGames = []
         
         for game in self.games:
-            gameDT = datetime.datetime.strptime((game['Date'] + ' ' + game['Start']), 
-                                                "%Y-%m-%d %H:%M")
-
-            if gameDT >= DTstart and gameDT < DTend:
+            if game['Start'] >= DTstart and game['End'] <= DTend:
                 foundGames.append(game)
 
         return foundGames

@@ -43,8 +43,6 @@ def main(schedule_url):
             i += 1
 
         print('Last Report fetched: ' + datetime.now().strftime('%H:%M') + '\n')
-        #print(sorted(games[0], key=lambda k: k['Datetime']))
-        #print(sorted(games[1], key=lambda k: k['Datetime']))
         showGames(games[0])
         showGames(games[1])
 
@@ -54,8 +52,8 @@ def showGames(g):
     ''' Function to print out the dict of info in a nice fashion
     to the commandline. '''
     for i in g:
-        print(i['Date'])
-        print(i['Start'] + '-' + i['End'] + '\n')
+        print(i['Start'].strftime('%Y-%m-%d'))
+        print(i['Start'].strftime('%H:%M') + '-' + i['End'].strftime('%H:%M') + '\n')
 
 if __name__ == '__main__':
 
