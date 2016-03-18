@@ -19,8 +19,11 @@ class Timeslots:
     def initHtml(self):
         '''Request first step of the booking process, seeing we're blocked from
         going straight for the second step which has all timeslots.'''
-        r = self.session.get(self.url.format(self.room, '1'))
-        return r.status_code == requests.codes.ok
+        try:
+            r = self.session.get(self.url.format(self.room, '1'))
+            return r.status_code == requests.codes.ok
+        except:
+            return False
 
     def getHtml(self, week):
         '''Get the HTML with availability for given week. Returning Beautiful

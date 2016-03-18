@@ -7,7 +7,9 @@ INTERVAL = 300
 
 def main(schedule_url):
     ''' Main loop '''
-    
+
+    timeLastUpdate = ''
+
     # Create Schedule object.
     try:
         schedule = Schedule(schedule_url)
@@ -31,6 +33,7 @@ def main(schedule_url):
         for room in rooms:
             if room.initHtml():
                 room.update()
+                timeLastUpdate = datetime.now().strftime('%H:%M')
 
                 # Find all games during focused shifts
                 r = rooms[i].findGames(schedule.events[i]['timeStart'], schedule.events[i]['timeEnd'])
@@ -42,9 +45,10 @@ def main(schedule_url):
 
             i += 1
 
-        print('Last Report fetched: ' + datetime.now().strftime('%H:%M') + '\n')
-        showGames(games[0])
-        showGames(games[1])
+        print('Last Report fetched: ' + timeLastUpdate + '\n')
+        if len(games) > 0:
+            showGames(games[0])
+            showGames(games[1])
 
         time.sleep(INTERVAL)
 
