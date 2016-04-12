@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-
 import requests
 import datetime
 from bs4 import BeautifulSoup
 
 class Timeslots:
     '''Creates an object with timeslots for given room.'''
-    def __init__(self, room):
+    def __init__(self, room, weeks):
         self.room = room    # Valid options are; bank, bunker, zombie_lab
+        self.weeks = weeks
 
         self.session = requests.Session()
         self.url = "http://stockholm.roomescapelive.se/reservation/index/game/{}/step/{}"
@@ -49,15 +49,19 @@ class Timeslots:
         eTime = None
         status = ''
 
-        soups = [self.getHtml('0'),
-                 self.getHtml('1')]
+        soups = []
+        # Create a soup object for each week. And append to our containter list.
+        for week in self.weeks:
+            soups.append(self.getHtml('{}'.format(week)))
 
-        # Get date for timeslot.
-        today = datetime.datetime.now()
-        weekStart = today - datetime.timedelta(today.weekday())
-
+        # Iterate our soup objects, should be one per week requested.
         for soup in soups:
+
+            # Fetch all timeslots
             htmlTimeslots = soup.find_all("div", "col-lg-12-5 text-center")
+
+            # Get the starting date of the week fetched.
+            weekStart = datetime.datetime.strptime(soup.find_all("small", limit = 1)[0].contents[0], "%Y-%m-%d")
 
             # Set starting time depending on room.
             if(self.room == 'bank' or self.room == 'bunker'):
@@ -136,11 +140,10 @@ class Timeslots:
         return sortedList
 
 if __name__ == '__main__':
-    zombie = Timeslots('zombie_lab')
-    
-    if zombie.initHtml():
-        zombie.update()
-        for game in zombie.games:
+    timeslots = Timeslots('zombie_lab', [1])
+    if timeslots.initHtml():
+        timeslots.update()
+        for game in timeslots.games:
             print(game)
     else:
         print("Bad request")

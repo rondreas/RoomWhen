@@ -24,18 +24,22 @@ class Schedule():
             summary = event.get('summary')
             dtStart = event.get('dtstart')
             dtEnd = event.get('dtend')
-
+            
             # Doodle datetimes are represented in gmt so I'm adjusting
             # the datetime objects to represent local time.
             dtStart.dt += tzDeltaTime
             dtEnd.dt += tzDeltaTime
+
+            # Get the week
+            week = dtEnd.dt.isocalendar()[1]-datetime.now().isocalendar()[1]
 
             # One can't compare naive to aware datetime objects, so we
             # strip the tzinfo from the calendar datetime.
             if dtEnd.dt.replace(tzinfo=None) > datetime.now():
                 self.events.append({'summary':summary,
                                     'timeStart':dtStart.dt.replace(tzinfo=None),
-                                    'timeEnd':dtEnd.dt.replace(tzinfo=None)})
+                                    'timeEnd':dtEnd.dt.replace(tzinfo=None),
+                                    'week':week})
 
     def sortEventsByDatetime(self):
         ''' Takes the stored events list and returns a list sorted in
@@ -54,6 +58,19 @@ class Schedule():
         else:
             print("Unexpected event, nothing to return")
 
+    def listRooms(self):
+        ''' Check schedule and return a dict with each unique room
+        in schedule and which weeks are related to those rooms. '''
+        scheduledRooms = {}
+        for event in self.events:
+            room = self.getRoom(event)
+            if room in scheduledRooms:
+                if event['week'] not in scheduledRooms[room]:
+                    scheduledRooms[room].append(event['week'])
+            else:
+                scheduledRooms[room] = [event['week']]
+        return scheduledRooms
+
     def prunePastEvents(self):
         ''' Goes through our list of events and deletes any event
         that has already passed. '''
@@ -67,4 +84,6 @@ if __name__ == '__main__':
     mySchedule = Schedule(url)
     mySchedule.events = mySchedule.sortEventsByDatetime()
     mySchedule.prunePastEvents()
-    print(mySchedule.events)
+    print(mySchedule.listRooms())
+    for shift in mySchedule.events:
+        print(shift)

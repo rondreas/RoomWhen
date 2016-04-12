@@ -2,6 +2,7 @@
 
 import sys
 from Timeslots import Timeslots
+from Schedule import Schedule
 import datetime
 from PySide import QtGui, QtCore
 
@@ -12,13 +13,13 @@ class Window(QtGui.QDialog):
         self.INTERVAL = 300000  # update interval in milliseconds
 
         self.shiftsWidgets = []
+        self.timeslotObjects = []
 
         self.getSchedule()
         self.getTimeslots()
         self.timeslotTimer()
         self.createShiftWidgets()
 
-        self.icalLayout()
         self.createShiftLayout()
         self.errorLayout()
         self.mainLayout()
@@ -39,8 +40,8 @@ class Window(QtGui.QDialog):
 
             # Fetch all timeslots for current shift. Poorly named 'widget' will
             # have to fix sometime later.
-            timeslots = self.timeslots.findGames(self.shifts[widget]['startTime'], 
-                                                 self.shifts[widget]['endTime'])
+            timeslots = self.timeslots.findGames(self.schedule.events[widget]['startTime'], 
+                                                 self.schedule.events[widget]['endTime'])
 
             # Get the layout for given shift widget.
             shiftWidgetLayout = self.shiftsWidgets[widget].layout()
@@ -65,16 +66,10 @@ class Window(QtGui.QDialog):
         ''' Create the main layout '''
         layout = QtGui.QVBoxLayout()
 
-        layout.addLayout(self.ical)
         layout.addWidget(self.shiftDisplay)
         layout.addWidget(self.errorWidget)
 
         self.setLayout(layout)
-
-    def icalLayout(self):
-        self.ical = QtGui.QHBoxLayout()
-        icalEdit = QtGui.QLineEdit()
-        self.ical.addWidget(icalEdit)
 
     def createShiftLayout(self):
         ''' Create a layout for a single shift. '''
@@ -135,40 +130,48 @@ class Window(QtGui.QDialog):
 
     def getTimeslots(self):
         ''' '''
-        self.timeslots = Timeslots(self.shifts[0]['Summary'])
-        if self.timeslots.initHtml():
-            self.timeslots.update()
-        else:
-            self.errorMsg.setText("Could not fetch timeslots...")
+        # Schedule.listRooms() returns a dict of room:week for us to
+        # create a timeslot for each room and only fetch important weeks.
+        roomList = self.schedule.listRooms()
+        for room in roomList:
+            self.timeslotObjects.append(Timeslots(room, roomList[room]))
+            
+        for timeslotObject in self.timeslotObjects:
+            if timeslotObject.initHtml():
+                timeslotObject.update()
+            else:
+                self.errorMsg.setText("Could not fetch timeslots...")
         
     def createShiftWidgets(self):
         ''' Create a widget with shift information for each shift. '''
 
         # For each shift create QWidget and set it's layout.
-        for shift in self.shifts:
+        for shift in self.schedule.events:
             shiftWidget = QtGui.QWidget()
             layout = QtGui.QVBoxLayout()
 
-            date = shift['startTime'].strftime("%Y-%m-%d")
-            room = shift['Summary'].upper()
+            date = shift['timeStart'].strftime("%Y-%m-%d")
+            room = shift['summary'].upper()
 
             # Add a widget with date and which room as a header
             layout.addWidget(QtGui.QLabel(date + " " + room))
 
             # Populate shift widget with all timeslots for given shift.
-            for timeslot in self.timeslots.findGames(shift['startTime'], shift['endTime']):
+            for timeslotObject in self.timeslotObjects:
+                if timeslotObject.room[:4] in shift['summary'].lower():
+                    for timeslot in timeslotObject.findGames(shift['timeStart'], shift['timeEnd']):
 
-                timeslotLayout = QtGui.QHBoxLayout()
+                        timeslotLayout = QtGui.QHBoxLayout()
 
-                # Get a combined timestamp for start and end of game
-                timestamp = timeslot['Start'].strftime("%H:%M")+'-'+timeslot['End'].strftime("%H:%M")
+                        # Get a combined timestamp for start and end of game
+                        timestamp = timeslot['Start'].strftime("%H:%M")+'-'+timeslot['End'].strftime("%H:%M")
 
-                # Populate the timeslot layout with current timeslot infomation
-                timeslotLayout.addWidget(QtGui.QLabel(timestamp))
-                timeslotLayout.addWidget(QtGui.QLabel(timeslot['Status']))
+                        # Populate the timeslot layout with current timeslot infomation
+                        timeslotLayout.addWidget(QtGui.QLabel(timestamp))
+                        timeslotLayout.addWidget(QtGui.QLabel(timeslot['Status']))
 
-                # Add the timeslot layout to the layout of our shift.
-                layout.addLayout(timeslotLayout)
+                        # Add the timeslot layout to the layout of our shift.
+                        layout.addLayout(timeslotLayout)
 
             shiftWidget.setLayout(layout)
 
@@ -176,17 +179,13 @@ class Window(QtGui.QDialog):
             self.shiftsWidgets.append(shiftWidget)
 
     def getSchedule(self):
-        ''' Pull the current schedule '''
-        # Temporary spoof shift data.
-        self.shifts = []
-        today = datetime.date.today()
-        for i in range(1, 4):
-            sTime = datetime.time(12, 30)
-            eTime = datetime.time(18, 00)
-            day = today + datetime.timedelta(days=i)
-            self.shifts.append({"Summary":'bunker',
-                                "startTime":datetime.datetime.combine(day, sTime),
-                                "endTime":datetime.datetime.combine(day, eTime)})
+        ''' Pull the current schedule, requires .icalURL file in same directory '''
+        url = ''
+        with open('.icalURL', 'r') as icalURL:
+            url = icalURL.readline().replace('\n', '')
+
+        self.schedule = Schedule(url)
+        self.schedule.events = self.schedule.sortEventsByDatetime()
 
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)
