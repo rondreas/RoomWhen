@@ -1,10 +1,13 @@
 #!/usr/bin/python3
 
 import sys
+import re
+import datetime
+
+from PySide import QtGui, QtCore
+
 from Timeslots import Timeslots
 from Schedule import Schedule
-import datetime
-from PySide import QtGui, QtCore
 
 class MySignal(QtCore.QObject):
     ''' Custom signal for our first execution of worker thread.'''
@@ -36,6 +39,9 @@ class Window(QtGui.QDialog):
 
         self.shiftsWidgets = []
         self.timeslotObjects = []
+
+        # Regex for grabbing room names from shift summaries.
+        self.pattern = re.compile("(\D*) \d*")
 
         self.getSchedule()
         self.getTimeslots()
@@ -198,6 +204,9 @@ class Window(QtGui.QDialog):
 
             date = shift['timeStart'].strftime("%Y-%m-%d")
             room = shift['summary'].upper()
+
+            patternMatch = re.match(self.pattern, room)
+            room = patternMatch.group(1)
 
             # Add a widget with date and which room as a header
             layout.addWidget(QtGui.QLabel(date + " " + room))
