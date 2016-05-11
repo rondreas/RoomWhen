@@ -90,13 +90,13 @@ class Timeslots:
                 date = weekDates[i%7]
 
                 # Get status of game.
-                if("well reservationUnavailableButton" in str(htmlTimeslots[i])):
+                if("reservationUnavailableButton" in str(htmlTimeslots[i])):
                     status = "Unavailable"
-                elif("well reservationReservedButton" in str(htmlTimeslots[i])):
+                elif("reservationReservedButton" in str(htmlTimeslots[i])):
                     status = "Reserved"
-                elif("well cp reservationAvailableButton" in str(htmlTimeslots[i])):
+                elif("reservationAvailableButton" in str(htmlTimeslots[i])):
                     status = "Available"
-                elif("well cp reservationLastMinuteButton" in str(htmlTimeslots[i])):
+                elif("reservationLastMinuteButton" in str(htmlTimeslots[i])):
                     status = "Last Minute"
                 else:
                     status = ''
