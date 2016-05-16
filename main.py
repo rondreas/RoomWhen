@@ -42,6 +42,20 @@ class Window(QtGui.QDialog):
         self.shiftsWidgets = []
         self.timeslotObjects = []
 
+        # Create viewport
+        self.viewport = QtGui.QWidget(self)
+        self.viewportLayout = QtGui.QVBoxLayout(self)
+        self.viewport.setLayout(self.viewportLayout)
+
+        # Scroll Area
+        self.scrollArea = QtGui.QScrollArea()
+        self.scrollArea.setVisible(True)
+        self.scrollArea.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.scrollArea.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
+        self.scrollArea.setWidgetResizable(True)
+        self.scrollArea.setMinimumWidth(self.viewport.sizeHint().width())
+        self.scrollArea.setWidget(self.viewport)
+
         # Regex for grabbing room names from shift summaries.
         self.pattern = re.compile("(\D*) \d*")
 
@@ -61,7 +75,6 @@ class Window(QtGui.QDialog):
 
         self.timeslotTimer()
 
-        self.errorLayout()
         self.mainLayout()
 
         self.createActions()
@@ -71,6 +84,7 @@ class Window(QtGui.QDialog):
         self.trayIcon.show()
 
         self.setWindowTitle("RoomWhen")
+        self.setFixedHeight(500)
 
     def starting(self):
         print("Starting thread!")
@@ -84,8 +98,6 @@ class Window(QtGui.QDialog):
         if data:
             self.createShiftWidgets()
             self.createShiftLayout()
-            self.layout().addWidget(self.shiftDisplay)
-
         else:
             self.updateTimeslotStatus()
 
@@ -160,46 +172,15 @@ class Window(QtGui.QDialog):
 
     def mainLayout(self):
         ''' Create the main layout '''
-        layout = QtGui.QVBoxLayout()
-
-        layout.addWidget(self.errorWidget)
-
-        self.setLayout(layout)
+        self.layout = QtGui.QVBoxLayout(self)
+        self.layout.addWidget(self.scrollArea)
+        self.setLayout(self.layout)
 
     def createShiftLayout(self):
         ''' Create a layout for a single shift. '''
-        self.shiftDisplay = QtGui.QWidget()
 
-        self.shiftDisplay.setMinimumSize(170, 510)
-
-        self.scrollArea = QtGui.QScrollArea()
-        self.scrollArea.setWidget(self.shiftDisplay)
-
-        self.shiftLayout = QtGui.QVBoxLayout()
         for widget in self.shiftsWidgets:
-            self.shiftLayout.addWidget(widget)
-
-        self.shiftDisplay.setLayout(self.shiftLayout)
-
-    def errorLayout(self):
-        ''' '''
-        self.errorWidget = QtGui.QWidget()
-        layout = QtGui.QHBoxLayout()
-
-        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-        self.errorMsg = QtGui.QLabel("{}".format(now))
-
-        self.errorBtn = QtGui.QPushButton("Ok")
-        self.errorBtn.clicked.connect(self.updateTimeslotStatus)
-        
-        layout.addWidget(self.errorMsg)
-        layout.addWidget(self.errorBtn)
-
-        self.errorWidget.setLayout(layout)
-
-    def errorBtnClicked(self):
-        ''' '''
-        self.errorWidget.hide()
+            self.viewportLayout.addWidget(widget)
 
     def createActions(self):
         self.minimizeAction = QtGui.QAction("Mi&nimize", self,
