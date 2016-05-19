@@ -23,9 +23,9 @@ class Worker(QtCore.QThread):
         self.timeslotObjects = timeslotObjects
 
     def run(self):
-        for timeslotObject in self.timeslotObjects:
-            if timeslotObject.initHtml():
-                timeslotObject.update()
+        for room in self.timeslotObjects:
+            if self.timeslotObjects[room].initHtml():
+                self.timeslotObjects[room].update()
             else:
                 pass
 
@@ -40,7 +40,7 @@ class Window(QtGui.QDialog):
 
         # Container lists for shift widgets and timeslots.
         self.shiftsWidgets = []
-        self.timeslotObjects = []
+        self.timeslotObjects = {}
 
         # Create viewport
         self.viewport = QtGui.QWidget(self)
@@ -118,7 +118,7 @@ class Window(QtGui.QDialog):
         roomList = self.schedule.listRooms()
 
         for room in roomList:
-            self.timeslotObjects.append(Timeslots(room, roomList[room]))
+            self.timeslotObjects[room] = Timeslots(room, roomList[room])
 
     def timeslotTimer(self):
         ''' Method to start the worker thread at given interval. '''
@@ -129,38 +129,22 @@ class Window(QtGui.QDialog):
         self.timer.start(self.INTERVAL)
 
     def updateTimeslotStatus(self):
-        ''' Method to loop through all shift widgets and update their displayed
-        status. 
-        
-        Current widget structure:
-            
-            MainWindow
-                ShiftDisplay - QVBoxLayout
-                    ShiftWidget - QVBoxLayout
-                        Timeslot 0
-                        Timeslot 1
-                        ...
-        '''
-        #TODO Could easy implement a check for status change and maybe connect
-        # a signal.
+        ''' '''
 
         # Loop each widget in our shifts container.
         for widget in range(len(self.shiftsWidgets)):
 
-            # Fetch room name from the child QLabel
-            room = self.shiftsWidgets[widget].layout().itemAt(0).layout().itemAt(1).widget().text()
+            # For current widget, fetch info to be used.
+            room = self.schedule.getRoom(self.schedule.events[widget])
+            start = self.schedule.events[widget]['timeStart']
+            end = self.schedule.events[widget]['timeEnd'] + datetime.timedelta(minutes=5)
 
-            # Loop timeslots to match room name to a timeslot object.
-            for timeslotObject in self.timeslotObjects:
-                if timeslotObject.room[:4] in room.lower():
-                    # Fetch information about the timeslots for current shift widget.
-                    timeslots = timeslotObject.findGames(self.schedule.events[widget]['timeStart'],
-                                                         self.schedule.events[widget]['timeEnd'] + datetime.timedelta(minutes=5))
+            timeslots = self.timeslotObjects[room].findGames(start, end)
 
-                    # For each QLabel holding booking status of game.
-                    # Update the status.
-                    for i in range(1, self.shiftsWidgets[widget].layout().count()):
-                        self.shiftsWidgets[widget].layout().itemAt(i).layout().itemAt(1).widget().setText(timeslots[i-1]['Status'])
+            # For each QLabel holding booking status of game.
+            # Update the status.
+            for i in range(1, self.shiftsWidgets[widget].layout().count()):
+                self.shiftsWidgets[widget].layout().itemAt(i).layout().itemAt(1).widget().setText(timeslots[i-1]['Status'])
 
     def setIcon(self):
         ''' '''
@@ -214,6 +198,7 @@ class Window(QtGui.QDialog):
             date = shift['timeStart'].strftime("%Y-%m-%d")
             room = shift['summary'].upper()
 
+            # Use regex to get nice room name for our widget.
             patternMatch = re.match(self.pattern, room)
             room = patternMatch.group(1)
 
@@ -223,25 +208,19 @@ class Window(QtGui.QDialog):
             headerLayout.addWidget(QtGui.QLabel(room))
             layout.addLayout(headerLayout)
 
-            # Populate shift widget with all timeslots for given shift.
-            for timeslotObject in self.timeslotObjects:
-                # Match current timeslot to the shift
-                if timeslotObject.room[:4] in shift['summary'].lower():
-                    # shift datetime is off by 25ms on linux - just to be sure
-                    # I'm then adding 5 min to it.
-                    for timeslot in timeslotObject.findGames(shift['timeStart'], shift['timeEnd'] + datetime.timedelta(minutes=5)):
+            for timeslot in self.timeslotObjects[self.schedule.getRoom(shift)].findGames(shift['timeStart'], shift['timeEnd'] + datetime.timedelta(minutes=5)):
 
-                        timeslotLayout = QtGui.QHBoxLayout()
+                timeslotLayout = QtGui.QHBoxLayout()
 
-                        # Get a combined timestamp for start and end of game
-                        timestamp = timeslot['Start'].strftime("%H:%M")+'-'+timeslot['End'].strftime("%H:%M")
+                # Get a combined timestamp for start and end of game
+                timestamp = timeslot['Start'].strftime("%H:%M")+'-'+timeslot['End'].strftime("%H:%M")
 
-                        # Populate the timeslot layout with current timeslot infomation
-                        timeslotLayout.addWidget(QtGui.QLabel(timestamp))
-                        timeslotLayout.addWidget(QtGui.QLabel(timeslot['Status']))
+                # Populate the timeslot layout with current timeslot infomation
+                timeslotLayout.addWidget(QtGui.QLabel(timestamp))
+                timeslotLayout.addWidget(QtGui.QLabel(timeslot['Status']))
 
-                        # Add the timeslot layout to the layout of our shift.
-                        layout.addLayout(timeslotLayout)
+                # Add the timeslot layout to the layout of our shift.
+                layout.addLayout(timeslotLayout)
 
             shiftWidget.setLayout(layout)
 
