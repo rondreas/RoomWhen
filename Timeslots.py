@@ -103,7 +103,8 @@ class Timeslots:
 
                 data = {"Start": datetime.datetime.combine(date, sTime),
                         "End": datetime.datetime.combine(date, eTime),
-                        "Status":status}
+                        "Status":status,
+                        "Timestamp":sTime.strftime("%H:%M") + '-' + eTime.strftime("%H:%M")}
 
                 games.append(data)
 
