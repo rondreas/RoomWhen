@@ -176,6 +176,17 @@ class Window(QtGui.QDialog):
         self.trayIcon = QtGui.QSystemTrayIcon(self)
         self.trayIcon.setContextMenu(self.trayIconMenu)
 
+    def showMessage(self, titel, body):
+        ''' '''
+        icon = QtGui.QSystemTrayIcon.MessageIcon(1)
+        self.trayIcon.showMessage(
+                titel,
+                body,
+                icon,
+                5000
+        )
+
+
     def createShiftWidgets(self):
         ''' Create a widget with shift information for each shift. Requires
         already initialized schedule and timeslot objects.'''
@@ -212,12 +223,23 @@ class Window(QtGui.QDialog):
             # Query timeslot for given widget room, about all games during it.
             timeslots = self.timeslotObjects[widget.room].findGames(widget.start, 
                                                                     widget.end)
-
             for timeslot in timeslots:
+
                 # Check if there has been any change
                 if timeslot['Status'] != widget.statuses[timeslot['Timestamp']].text():
-                    # If changed, update existing widget.
+
+                    # Compose notification message.
+                    titel = widget.titel + ' ' + widget.date + " status changed"
+                    body = "The " +  widget.titel + " at the " +  widget.date + \
+                           " had it's status change from " + \
+                           widget.statuses[timeslot['Timestamp']].text() + \
+                           " to " + timeslot['Status']
+
+                    self.showMessage(titel, body)
+
+                    # Update widget with the change.
                     widget.statuses[timeslot['Timestamp']].setText(timeslot['Status'])
+
                 else:
                     pass
 
