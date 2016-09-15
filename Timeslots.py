@@ -7,36 +7,28 @@ class Timeslots:
     '''Creates an object with timeslots for given room.'''
     def __init__(self, room, weeks):
         self.room = room    # Valid options are; bank, bunker, zombie_lab
-        self.weeks = weeks
+        self.weeks = weeks  # list of iso week numbers
 
-        self.session = requests.Session()
-        self.url = "http://stockholm.roomescapelive.se/reservation/index/game/{}/step/{}"
-        self.payload = {'game': self.room, 'group': '4'}
-        self.header = {'User-Agent':'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:39.0) Gecko/20100101 Firefox/39.0'}
+        self.url = "http://stockholm.roomescapelive.se/reservation/index/game/{}"
 
-        self.games = []
+        self.games = []     # container for games
 
-    def initHtml(self):
-        '''Request first step of the booking process, seeing we're blocked from
-        going straight for the second step which has all timeslots.'''
-        try:
-            r = self.session.get(self.url.format(self.room, '1'))
-            return r.status_code == requests.codes.ok
-        except:
-            return False
-
-    def getHtml(self, week):
+    def getSoup(self, week):
         '''Get the HTML with availability for given week. Returning Beautiful
         Soup Object of the HTML response.'''
 
-        r = self.session.post(self.url.format(self.room, '2')\
-                              + '/group/4/week/{}'.format(week),
-                              data = self.payload,
-                              headers = self.header)
+        # Get the webpage
+        r = requests.get(self.url.format(self.room)\
+                         + '/week/{}'.format(week))
 
-        soup = BeautifulSoup(r.content, 'html.parser')
-
-        return soup
+        if r.status_code == requests.codes.ok:
+            # Soupify the page
+            soup = BeautifulSoup(r.text.encode('utf-8').decode('ascii', 'ignore'),
+                                 'html.parser')
+            return soup
+        else:
+            return None
+        
 
     def update(self):
         '''Get and store two weeks of timeslots into a list. Return list of
@@ -52,24 +44,26 @@ class Timeslots:
         soups = []
         # Create a soup object for each week. And append to our containter list.
         for week in self.weeks:
-            soups.append(self.getHtml('{}'.format(week)))
+            soups.append(self.getSoup('{}'.format(week)))
 
         # Iterate our soup objects, should be one per week requested.
         for soup in soups:
 
-            # Fetch all timeslots
-            htmlTimeslots = soup.find_all("div", "col-lg-12-5 text-center")
+            # Get the tag holding the calendar widget
+            calendarWidget = soup.find('table',
+                                       class_='table booking_table hidden-xs')
 
-            # Get the starting date of the week fetched.
-            weekStart = datetime.datetime.strptime(soup.find_all("small", limit = 1)[0].contents[0], "%Y-%m-%d")
-
-            # Set starting time depending on room.
-            if(self.room == 'bank' or self.room == 'bunker'):
-                sTime = datetime.time(9, 30)
-                eTime = datetime.time(10, 30)
-            elif(self.room == 'zombie_lab'):
-                sTime = datetime.time(10, 00)
-                eTime = datetime.time(11, 00)
+            # Fetch all timeslots and their status from the calendar widget
+            htmlTimeslots = list()
+            buttonContainers = calendarWidget.find_all("div", "buttonContainer")
+            for btn in buttonContainers:
+                htmlTimeslots.append(btn.parent.get('class')[1])
+                
+            # Each calendar widget on page has the starting day of that week as yy-mm-dd
+            weekStart = datetime.datetime.strptime(soup.find('span', id='calendar').get('data-date'), '%Y-%m-%d')
+            
+            sTime = datetime.time(9, 30)
+            eTime = datetime.time(10, 30)
             
             # Make a list of all dates that week.
             weekDates = []
@@ -90,20 +84,20 @@ class Timeslots:
                 date = weekDates[i%7]
 
                 # Get status of game.
-                if("reservationUnavailableButton" in str(htmlTimeslots[i])):
+                if("unavailableButton" in htmlTimeslots[i]):
                     status = "Unavailable"
-                elif("reservationReservedButton" in str(htmlTimeslots[i])):
+                elif("reservedButton" in htmlTimeslots[i]):
                     status = "Reserved"
-                elif("reservationAvailableButton" in str(htmlTimeslots[i])):
+                elif("availableButton" in htmlTimeslots[i]):
                     status = "Available"
-                elif("reservationLastMinuteButton" in str(htmlTimeslots[i])):
+                elif("lastMinuteButton" in htmlTimeslots[i]):
                     status = "Last Minute"
                 else:
                     status = ''
 
                 data = {"Start": datetime.datetime.combine(date, sTime),
                         "End": datetime.datetime.combine(date, eTime),
-                        "Status":status,
+                        "Status": status,
                         "Timestamp":sTime.strftime("%H:%M") + '-' + eTime.strftime("%H:%M")}
 
                 games.append(data)
@@ -141,10 +135,7 @@ class Timeslots:
         return sortedList
 
 if __name__ == '__main__':
-    timeslots = Timeslots('zombie_lab', [1])
-    if timeslots.initHtml():
-        timeslots.update()
-        for game in timeslots.games:
-            print(game)
-    else:
-        print("Bad request")
+    timeslots = Timeslots('zombie_lab', [datetime.datetime.now().isocalendar()[1]])
+    timeslots.update()
+    for game in timeslots.games:
+        print(game)

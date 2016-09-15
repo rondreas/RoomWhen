@@ -9,3 +9,8 @@ venv/
 
 # ignore cached compiles
 __pycache__/
+
+# Ignore Visual Studio junk
+.vs/
+*.sln
+*.pyproj

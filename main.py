@@ -24,9 +24,9 @@ class Worker(QtCore.QThread):
 
     def run(self):
         for room in self.timeslotObjects:
-            if self.timeslotObjects[room].initHtml():
+            try:
                 self.timeslotObjects[room].update()
-            else:
+            except:
                 pass
 
         self.signal.sig.emit(self.firstRun)
@@ -111,8 +111,11 @@ class Window(QtGui.QDialog):
     def getSchedule(self):
         ''' Pull the current schedule, requires .icalURL file in same directory '''
         url = ''
-        with open('.icalURL', 'r') as icalURL:
-            url = icalURL.readline().replace('\n', '')
+        try:
+            with open('.icalURL', 'r') as icalURL:
+                url = icalURL.readline().replace('\n', '')
+        except IOError:
+            pass    # No pre made url file, so create dialogue for creating one.
 
         self.schedule = Schedule(url)
         self.schedule.events = self.schedule.sortEventsByDatetime()

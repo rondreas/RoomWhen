@@ -31,7 +31,7 @@ class Schedule():
             dtEnd.dt += tzDeltaTime
 
             # Get the week
-            week = dtEnd.dt.isocalendar()[1]-datetime.now().isocalendar()[1]
+            week = dtEnd.dt.isocalendar()[1]
 
             # One can't compare naive to aware datetime objects, so we
             # strip the tzinfo from the calendar datetime.
@@ -49,6 +49,7 @@ class Schedule():
 
     def getRoom(self, event):
         ''' Checks which room given event is to take place in '''
+        #TODO add new rooms, not sure how they look in doodle.
         if 'zombie' in event['summary'].lower():
             return 'zombie_lab'
         elif 'bank' in event['summary'].lower():
