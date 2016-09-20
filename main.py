@@ -43,6 +43,7 @@ class Window(QtGui.QDialog):
         # Create viewport
         self.viewport = QtGui.QWidget(self)
         self.viewportLayout = QtGui.QVBoxLayout(self)
+        self.viewportLayout.setSizeConstraint(QtGui.QLayout.SetFixedSize)
         self.viewport.setLayout(self.viewportLayout)
 
         # Scroll Area
@@ -267,13 +268,14 @@ class ShiftWidget(QtGui.QWidget):
 
         self.headerLayout.addWidget(self.dateLabel)
         self.headerLayout.addWidget(self.titelLabel)
-
-        
+   
         # Create the widget layout
         self.layout = QtGui.QVBoxLayout(self)
         self.layout.addLayout(self.headerLayout)
         self.addTimeslots()
         self.setLayout(self.layout)
+
+        self.layout.setSizeConstraint(QtGui.QLayout.SetFixedSize)
 
     def addTimeslots(self):
         for timeslot in self.timeslots:
