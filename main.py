@@ -9,16 +9,14 @@ from PySide import QtGui, QtCore
 from Timeslots import Timeslots
 from Schedule import Schedule
 
-class BoolSignal(QtCore.QObject):
-    ''' Custom Boolean signal '''
-    sig = QtCore.Signal(bool)
-
 class Worker(QtCore.QThread):
     ''' Creating a QThread class to run the time intensive webscrape of
     timeslots. '''
+
+    signal = QtCore.Signal(bool)
+
     def __init__(self, timeslotObjects, parent = None):
         super(Worker, self).__init__(parent)
-        self.signal = BoolSignal()
         self.firstRun = True
         self.timeslotObjects = timeslotObjects
 
@@ -29,7 +27,7 @@ class Worker(QtCore.QThread):
             except:
                 pass
 
-        self.signal.sig.emit(self.firstRun)
+        self.signal.emit(self.firstRun)
         self.firstRun = False
 
 class Window(QtGui.QDialog):
@@ -75,7 +73,7 @@ class Window(QtGui.QDialog):
         # Connect QThread objects signals.
         self.worker.started.connect(self.starting)
         self.worker.finished.connect(self.finished)
-        self.worker.signal.sig.connect(self.updateDisplay)
+        self.worker.signal.connect(self.updateDisplay)
 
         self.worker.start()
 
