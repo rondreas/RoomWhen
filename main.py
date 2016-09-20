@@ -4,7 +4,8 @@ import sys
 import re
 import datetime
 
-from PySide import QtGui, QtCore
+from PySide import QtCore
+from PySide import QtGui
 
 from Timeslots import Timeslots
 from Schedule import Schedule
@@ -40,26 +41,9 @@ class Window(QtGui.QDialog):
         self.shiftWidgets = []
         self.timeslotObjects = {}
 
-        # Create viewport
-        self.viewport = QtGui.QWidget(self)
-        self.viewportLayout = QtGui.QVBoxLayout(self)
-        self.viewportLayout.setSizeConstraint(QtGui.QLayout.SetFixedSize)
-        self.viewport.setLayout(self.viewportLayout)
-
-        # Scroll Area
-        self.scrollArea = QtGui.QScrollArea()
-        self.scrollArea.setVisible(True)
-        self.scrollArea.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self.scrollArea.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
-        self.scrollArea.setWidgetResizable(True)
-        self.scrollArea.setMinimumWidth(self.viewport.sizeHint().width())
-        self.scrollArea.setWidget(self.viewport)
-
-        # Create a progress bar
-        self.progressbar = QtGui.QProgressBar(self)
-        self.progressbar.setObjectName("status")
-        self.progressbar.setMinimum(0)
-        self.progressbar.setMaximum(0)
+        self.viewport = Viewport(self)
+        self.scrollArea = ScrollArea(self.viewport)
+        self.progressbar = Progressbar(self)
 
         # Regex for grabbing room names from shift summaries.
         self.pattern = re.compile("(\D*) \d*")
@@ -156,7 +140,7 @@ class Window(QtGui.QDialog):
         ''' Create a layout for a single shift. '''
 
         for widget in self.shiftsWidgets:
-            self.viewportLayout.addWidget(widget)
+            self.viewport.layout.addWidget(widget)
 
     def createActions(self):
         self.minimizeAction = QtGui.QAction("Mi&nimize", self,
@@ -215,7 +199,7 @@ class Window(QtGui.QDialog):
             )
 
             self.shiftWidgets.append(shiftWidget)
-            self.viewportLayout.addWidget(shiftWidget)
+            self.viewport.layout.addWidget(shiftWidget)
 
     def updateTimeslotStatus(self):
         ''' Iterate through all widgets and update any changes. '''
@@ -245,8 +229,31 @@ class Window(QtGui.QDialog):
                 else:
                     pass
 
+class Viewport(QtGui.QWidget):
+
+    def __init__(self, parent = None):
+        super(Viewport, self).__init__(parent)
+
+        self.createLayout()
+
+    def createLayout(self):
+
+        self.layout = QtGui.QVBoxLayout(self)
+        self.layout.setSizeConstraint(QtGui.QLayout.SetFixedSize)
+
+        self.setLayout(self.layout)
+
+class ScrollArea(QtGui.QScrollArea):
+    def __init__(self, widget):
+        super(ScrollArea, self).__init__()
+        self.setVisible(True)
+        self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
+        self.setWidgetResizable(True)
+        self.setMinimumWidth(widget.sizeHint().width())
+        self.setWidget(widget)
+
 class ShiftWidget(QtGui.QWidget):
-    ''' '''
     def __init__(self, titel, date, timeslots, room, start, end, parent = None):
         super(ShiftWidget, self).__init__(parent)
 
@@ -292,6 +299,13 @@ class ShiftWidget(QtGui.QWidget):
             timeslotLayout.addWidget(timeslotStatusLabel)
 
             self.layout.addLayout(timeslotLayout)
+
+class Progressbar(QtGui.QProgressBar):
+    def __init__(self, parent = None):
+        super(Progressbar,self).__init__(parent)
+        self.setObjectName("status")
+        self.setMinimum(0)
+        self.setMaximum(0)
 
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)
